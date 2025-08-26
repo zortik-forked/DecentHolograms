@@ -112,7 +112,8 @@ public class DefaultExpansionActivator implements ExpansionActivator {
 
         contexts.put(expansion.getId(), context);
 
-        logger.log(Level.INFO, "Activated expansion: {0}", expansion.getName());
+        logger.log(Level.INFO, "Activated expansion {0} v{1} by {2}",
+                new Object[]{expansion.getName(), expansion.getVersion(), expansion.getAuthor()});
         return true;
     }
 
