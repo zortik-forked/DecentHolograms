@@ -2,6 +2,8 @@ package eu.decentsoftware.holograms.api.expansion.context;
 
 import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.commands.DecentCommand;
+import eu.decentsoftware.holograms.nms.NmsPacketListenerService;
+import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -20,16 +22,22 @@ import java.util.logging.Logger;
  */
 public class DefaultExpansionContext implements ExpansionContext {
     private final CommandManager commandManager;
+    private final NmsPacketListenerService packetListenerService;
     private final Logger logger;
+
     private final Map<UUID, Runnable> commandUnregisterCallbacks;
+    private final List<NmsPacketListener> registeredPacketListeners;
     private final List<ExpansionContextEventHandler> eventHandlers;
 
     private boolean closed;
 
-    public DefaultExpansionContext(CommandManager commandManager, Logger logger) {
+    public DefaultExpansionContext(
+            CommandManager commandManager, NmsPacketListenerService packetListenerService, Logger logger) {
         this.commandManager = commandManager;
+        this.packetListenerService = packetListenerService;
         this.logger = logger;
         this.commandUnregisterCallbacks = new ConcurrentHashMap<>();
+        this.registeredPacketListeners = new CopyOnWriteArrayList<>();
         this.eventHandlers = new CopyOnWriteArrayList<>();
         this.closed = false;
     }
@@ -79,6 +87,20 @@ public class DefaultExpansionContext implements ExpansionContext {
     }
 
     @Override
+    public void registerNmsPacketListener(NmsPacketListener listener) {
+        packetListenerService.registerAutoListener(listener);
+
+        registeredPacketListeners.add(listener);
+    }
+
+    @Override
+    public void unregisterNmsPacketListener(NmsPacketListener listener) {
+        registeredPacketListeners.remove(listener);
+
+        packetListenerService.unregisterAutoListener(listener);
+    }
+
+    @Override
     public void addContextEventHandler(ExpansionContextEventHandler handler) {
         eventHandlers.add(handler);
     }
@@ -108,6 +130,11 @@ public class DefaultExpansionContext implements ExpansionContext {
             unregisterCallback.run();
         }
         commandUnregisterCallbacks.clear();
+
+        for (NmsPacketListener listener : registeredPacketListeners) {
+            packetListenerService.unregisterAutoListener(listener);
+        }
+        registeredPacketListeners.clear();
 
         closed = true;
 

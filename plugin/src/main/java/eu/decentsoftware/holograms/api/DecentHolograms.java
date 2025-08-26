@@ -85,7 +85,7 @@ public final class DecentHolograms {
         this.expansionRegistry = new DefaultExpansionRegistry();
         this.expansionActivator = new DefaultExpansionActivator(
                 new DefaultAppContextFactory(),
-                new DefaultExpansionContextFactory(commandManager, getLogger()), getLogger());
+                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, getLogger()), getLogger());
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);

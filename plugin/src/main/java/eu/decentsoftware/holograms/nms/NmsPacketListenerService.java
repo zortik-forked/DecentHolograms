@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * This service is responsible for managing packet listener for online players.
@@ -24,12 +25,14 @@ public class NmsPacketListenerService {
     private final NmsPlayerListener playerListener;
 
     private final Map<String, NmsPacketListenerDelegate> delegates;
+    private final List<NmsPacketListener> autoListeners;
 
     public NmsPacketListenerService(JavaPlugin plugin, NmsAdapter nmsAdapter, NmsPacketListener packetListener) {
         this.nmsAdapter = nmsAdapter;
         this.packetListener = packetListener;
         this.playerListener = new NmsPlayerListener(this);
         this.delegates = new ConcurrentHashMap<>();
+        this.autoListeners = new CopyOnWriteArrayList<>();
 
         Bukkit.getPluginManager().registerEvents(playerListener, plugin);
         registerListenerForAllPlayers();
@@ -50,7 +53,12 @@ public class NmsPacketListenerService {
      * @param player The player.
      */
     void registerListener(Player player) {
-        delegates.put(player.getName(), new NmsPacketListenerDelegate(Collections.singletonList(packetListener)));
+        NmsPacketListenerDelegate delegate = new NmsPacketListenerDelegate(Collections.singletonList(packetListener));
+        for (NmsPacketListener autoListener : autoListeners) {
+            delegate.addListener(autoListener);
+        }
+
+        delegates.put(player.getName(), delegate);
 
         nmsAdapter.registerPacketListener(player, packetListener);
     }
@@ -64,6 +72,29 @@ public class NmsPacketListenerService {
         delegates.remove(player.getName());
 
         nmsAdapter.unregisterPacketListener(player);
+    }
+
+    /**
+     * Register an automatic packet listener.
+     * The auto listeners will be added to every player that joins the server.
+     *
+     * @param listener The listener to add.
+     */
+    public void registerAutoListener(NmsPacketListener listener) {
+        autoListeners.add(listener);
+
+        delegates.values().forEach(delegate -> delegate.addListener(listener));
+    }
+
+    /**
+     * Unregister an automatic packet listener.
+     *
+     * @param listener The listener to remove.
+     */
+    public void unregisterAutoListener(NmsPacketListener listener) {
+        autoListeners.remove(listener);
+
+        delegates.values().forEach(delegate -> delegate.removeListener(listener));
     }
 
     /**

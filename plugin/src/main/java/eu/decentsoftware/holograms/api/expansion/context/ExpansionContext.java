@@ -1,5 +1,7 @@
 package eu.decentsoftware.holograms.api.expansion.context;
 
+import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
+
 import java.util.UUID;
 
 /**
@@ -23,6 +25,21 @@ public interface ExpansionContext {
      * @param registrationId the unique identifier of the registration
      */
     void unregisterCommand(UUID registrationId);
+
+    /**
+     * Registers an NMS packet listener that will be automatically attached to all online players
+     * and any players that join while the listener is registered.
+     *
+     * @param listener the NMS packet listener to register
+     */
+    void registerNmsPacketListener(NmsPacketListener listener);
+
+    /**
+     * Unregisters a previously registered NMS packet listener.
+     *
+     * @param listener the NMS packet listener to unregister
+     */
+    void unregisterNmsPacketListener(NmsPacketListener listener);
 
     /**
      * Adds an event handler to listen for context events.
