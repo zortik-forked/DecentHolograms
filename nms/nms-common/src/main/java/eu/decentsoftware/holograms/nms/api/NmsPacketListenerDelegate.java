@@ -1,6 +1,5 @@
-package eu.decentsoftware.holograms.nms;
+package eu.decentsoftware.holograms.nms.api;
 
-import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
 import eu.decentsoftware.holograms.nms.api.event.NmsEntityInteractEvent;
 
 import java.util.ArrayList;

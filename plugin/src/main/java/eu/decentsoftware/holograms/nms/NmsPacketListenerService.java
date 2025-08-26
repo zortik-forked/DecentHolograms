@@ -2,6 +2,7 @@ package eu.decentsoftware.holograms.nms;
 
 import eu.decentsoftware.holograms.nms.api.NmsAdapter;
 import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
+import eu.decentsoftware.holograms.nms.api.NmsPacketListenerDelegate;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
