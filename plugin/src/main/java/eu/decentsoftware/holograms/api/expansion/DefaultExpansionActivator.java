@@ -81,6 +81,8 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             return false;
         }
 
+        // TODO: Log successful activation
+
         contexts.put(expansion.getId(), context);
         return true;
     }
