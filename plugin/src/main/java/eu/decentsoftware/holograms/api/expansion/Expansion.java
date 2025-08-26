@@ -21,7 +21,6 @@ public interface Expansion {
      * @param appContext the application context
      */
     default void onEnable(ExpansionContext context, AppContext appContext) {
-        // Bootup and registration logic
     }
 
     /**

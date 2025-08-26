@@ -159,10 +159,9 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             AppContext appContext = appContextFactory.createAppContext();
 
             expansion.onDisable(context, appContext);
+
             if (!context.isClosed()) {
                 context.close();
-
-                // TODO: Log that he forgot to close the context
             }
         } finally {
             deactivatingExpansions.remove(expansion.getId());

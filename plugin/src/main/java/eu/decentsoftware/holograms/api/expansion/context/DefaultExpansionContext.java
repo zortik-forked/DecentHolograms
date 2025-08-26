@@ -10,6 +10,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Default implementation of the {@link ExpansionContext} interface.
@@ -18,13 +20,15 @@ import java.util.function.Consumer;
  */
 public class DefaultExpansionContext implements ExpansionContext {
     private final CommandManager commandManager;
+    private final Logger logger;
     private final Map<UUID, Runnable> commandUnregisterCallbacks;
     private final List<ExpansionContextEventHandler> eventHandlers;
 
     private boolean closed;
 
-    public DefaultExpansionContext(CommandManager commandManager) {
+    public DefaultExpansionContext(CommandManager commandManager, Logger logger) {
         this.commandManager = commandManager;
+        this.logger = logger;
         this.commandUnregisterCallbacks = new ConcurrentHashMap<>();
         this.eventHandlers = new CopyOnWriteArrayList<>();
         this.closed = false;
@@ -79,12 +83,17 @@ public class DefaultExpansionContext implements ExpansionContext {
         eventHandlers.add(handler);
     }
 
+    /**
+     * Calls all registered event handlers with the given call.
+     *
+     * @param call the call to make on each handler
+     */
     private void callEventHandlers(Consumer<ExpansionContextEventHandler> call) {
         for (ExpansionContextEventHandler handler : eventHandlers) {
             try {
                 call.accept(handler);
             } catch (Exception e) {
-                // TODO: Log
+                logger.log(Level.SEVERE, "Exception while calling context event handler.", e);
             }
         }
     }
@@ -92,7 +101,7 @@ public class DefaultExpansionContext implements ExpansionContext {
     @Override
     public void close() {
         if (isClosed()) {
-            throw new IllegalStateException("ExpansionContext is already closed.");
+            return;
         }
 
         for (Runnable unregisterCallback : commandUnregisterCallbacks.values()) {
