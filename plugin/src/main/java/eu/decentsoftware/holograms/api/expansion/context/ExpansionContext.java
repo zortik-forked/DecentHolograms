@@ -25,6 +25,13 @@ public interface ExpansionContext {
     void unregisterCommand(UUID registrationId);
 
     /**
+     * Adds an event handler to listen for context events.
+     *
+     * @param handler the event handler to add
+     */
+    void addContextEventHandler(ExpansionContextEventHandler handler);
+
+    /**
      * Cleans up all associated resources with the holding expansion.
      */
     void close();

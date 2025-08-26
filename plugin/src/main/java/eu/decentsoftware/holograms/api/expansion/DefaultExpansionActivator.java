@@ -3,12 +3,18 @@ package eu.decentsoftware.holograms.api.expansion;
 import eu.decentsoftware.holograms.api.context.AppContext;
 import eu.decentsoftware.holograms.api.context.AppContextFactory;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
+import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextEventHandler;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextFactory;
 import eu.decentsoftware.holograms.api.expansion.requirement.CheckResult;
 import eu.decentsoftware.holograms.api.expansion.requirement.ExpansionRequirement;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Default implementation of the ExpansionActivator.
@@ -18,14 +24,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultExpansionActivator implements ExpansionActivator {
     private final AppContextFactory appContextFactory;
     private final ExpansionContextFactory expansionContextFactory;
+    private final Logger logger;
 
     private final Map<String, ExpansionContext> contexts;
+    private final List<String> deactivatingExpansions;
 
+    /**
+     * Creates a new DefaultExpansionActivator.
+     *
+     * @param appContextFactory the factory for app contexts used during activation
+     * @param expansionContextFactory the factory for creating expansion contexts
+     * @param logger the logger to use
+     */
     public DefaultExpansionActivator(
-            AppContextFactory appContextFactory, ExpansionContextFactory expansionContextFactory) {
+            AppContextFactory appContextFactory, ExpansionContextFactory expansionContextFactory, Logger logger) {
         this.appContextFactory = appContextFactory;
         this.expansionContextFactory = expansionContextFactory;
+        this.logger = logger;
         this.contexts = new ConcurrentHashMap<>();
+        this.deactivatingExpansions = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -49,14 +66,17 @@ public class DefaultExpansionActivator implements ExpansionActivator {
      * @param appContext the application context
      * @return true if all requirements are met, false otherwise
      */
-    private static boolean passesRequirements(Expansion expansion, AppContext appContext) {
+    private boolean passesRequirements(Expansion expansion, AppContext appContext) {
         for (ExpansionRequirement requirement : expansion.getRequirements()) {
             CheckResult checkResult = requirement.canEnable(expansion, appContext);
             if (checkResult.isSuccess()) {
                 continue;
             }
 
-            // TODO: Log the reason
+            String errorMessage = checkResult.getErrorMessage();
+            logger.log(Level.WARNING, "Expansion {0} cannot be activated: {1}",
+                    new Object[]{expansion.getName(), errorMessage != null ? errorMessage : "Unknown reason"});
+
             return false;
         }
 
@@ -76,15 +96,55 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             expansion.onEnable(context, appContext);
         } catch (Exception e) {
             context.close();
-            // TODO: Log
+            logger.log(Level.SEVERE, "Exception while activating expansion " + expansion.getName(), e);
 
             return false;
         }
 
-        // TODO: Log successful activation
+        if (context.isClosed()) {
+            logger.log(Level.WARNING, "Expansion {0} closed its context during onEnable, it won't be activated.",
+                    expansion.getName());
+            return false;
+        }
+
+        // Add watcher for context close
+        context.addContextEventHandler(createExpansionWatchingHandler(expansion));
 
         contexts.put(expansion.getId(), context);
+
+        logger.log(Level.INFO, "Activated expansion: {0}", expansion.getName());
         return true;
+    }
+
+    /**
+     * Create a handler that watches for context closure and deactivates the expansion if it happens from
+     * the inside of the expansion.
+     *
+     * @param expansion the expansion to watch
+     * @return the created event handler
+     */
+    private @NotNull ExpansionContextEventHandler createExpansionWatchingHandler(Expansion expansion) {
+        return new ExpansionContextEventHandler() {
+            @Override
+            public void onContextClosed(ExpansionContext context) {
+                String expansionIdForContext = null;
+                for (String expansionId : contexts.keySet()) {
+                    if (contexts.get(expansionId) != context) {
+                        continue;
+                    }
+
+                    expansionIdForContext = expansionId;
+                }
+
+                // If the expansion is already being deactivated, the context is closed on purpose
+                if (!deactivatingExpansions.contains(expansionIdForContext)) {
+                    logger.log(Level.WARNING, "Expansion {0} closed its context, deactivating it.",
+                            expansion.getName());
+
+                    deactivate(expansion);
+                }
+            }
+        };
     }
 
     @Override
@@ -94,15 +154,19 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             return false;
         }
 
-        AppContext appContext = appContextFactory.createAppContext();
+        deactivatingExpansions.add(expansion.getId());
+        try {
+            AppContext appContext = appContextFactory.createAppContext();
 
-        expansion.onDisable(context, appContext);
-        if (!context.isClosed()) {
-            context.close();
+            expansion.onDisable(context, appContext);
+            if (!context.isClosed()) {
+                context.close();
 
-            // TODO: Log that he forgot to close the context
+                // TODO: Log that he forgot to close the context
+            }
+        } finally {
+            deactivatingExpansions.remove(expansion.getId());
         }
-
         return true;
     }
 

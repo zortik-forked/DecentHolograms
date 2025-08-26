@@ -4,9 +4,12 @@ import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.commands.DecentCommand;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /**
  * Default implementation of the {@link ExpansionContext} interface.
@@ -16,12 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultExpansionContext implements ExpansionContext {
     private final CommandManager commandManager;
     private final Map<UUID, Runnable> commandUnregisterCallbacks;
+    private final List<ExpansionContextEventHandler> eventHandlers;
 
     private boolean closed;
 
     public DefaultExpansionContext(CommandManager commandManager) {
         this.commandManager = commandManager;
         this.commandUnregisterCallbacks = new ConcurrentHashMap<>();
+        this.eventHandlers = new CopyOnWriteArrayList<>();
         this.closed = false;
     }
 
@@ -70,6 +75,21 @@ public class DefaultExpansionContext implements ExpansionContext {
     }
 
     @Override
+    public void addContextEventHandler(ExpansionContextEventHandler handler) {
+        eventHandlers.add(handler);
+    }
+
+    private void callEventHandlers(Consumer<ExpansionContextEventHandler> call) {
+        for (ExpansionContextEventHandler handler : eventHandlers) {
+            try {
+                call.accept(handler);
+            } catch (Exception e) {
+                // TODO: Log
+            }
+        }
+    }
+
+    @Override
     public void close() {
         if (isClosed()) {
             throw new IllegalStateException("ExpansionContext is already closed.");
@@ -81,6 +101,8 @@ public class DefaultExpansionContext implements ExpansionContext {
         commandUnregisterCallbacks.clear();
 
         closed = true;
+
+        callEventHandlers(handler -> handler.onContextClosed(this));
     }
 
     @Override
