@@ -7,7 +7,10 @@ import java.util.Set;
 
 /**
  * This class represents a Manager for handling features.
+ *
+ * TODO: deprecation notice
  */
+@Deprecated
 public class FeatureManager {
 
     private final Map<String, AbstractFeature> featureMap = new HashMap<>();
