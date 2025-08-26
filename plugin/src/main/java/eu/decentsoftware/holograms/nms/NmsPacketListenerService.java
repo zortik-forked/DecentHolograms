@@ -7,6 +7,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * This service is responsible for managing packet listener for online players.
  *
@@ -19,10 +22,13 @@ public class NmsPacketListenerService {
     private final NmsPacketListener packetListener;
     private final NmsPlayerListener playerListener;
 
+    private final Map<String, NmsPacketListenerDelegate> delegates;
+
     public NmsPacketListenerService(JavaPlugin plugin, NmsAdapter nmsAdapter, NmsPacketListener packetListener) {
         this.nmsAdapter = nmsAdapter;
         this.packetListener = packetListener;
         this.playerListener = new NmsPlayerListener(this);
+        this.delegates = new ConcurrentHashMap<>();
 
         Bukkit.getPluginManager().registerEvents(playerListener, plugin);
         registerListenerForAllPlayers();
@@ -43,6 +49,8 @@ public class NmsPacketListenerService {
      * @param player The player.
      */
     void registerListener(Player player) {
+        delegates.put(player.getName(), new NmsPacketListenerDelegate(Collections.singletonList(packetListener)));
+
         nmsAdapter.registerPacketListener(player, packetListener);
     }
 
@@ -52,7 +60,37 @@ public class NmsPacketListenerService {
      * @param player The player.
      */
     void unregisterListener(Player player) {
+        delegates.remove(player.getName());
+
         nmsAdapter.unregisterPacketListener(player);
+    }
+
+    /**
+     * Add a packet listener for the given player.
+     *
+     * @param player The player.
+     * @param listener The listener to add.
+     */
+    public void addPacketListener(Player player, NmsPacketListener listener) {
+        NmsPacketListenerDelegate delegate = delegates.get(player.getName());
+
+        if (delegate != null) {
+            delegate.addListener(listener);
+        }
+    }
+
+    /**
+     * Remove a packet listener for the given player.
+     *
+     * @param player The player.
+     * @param listener The listener to remove.
+     */
+    public void removePacketListener(Player player, NmsPacketListener listener) {
+        NmsPacketListenerDelegate delegate = delegates.get(player.getName());
+
+        if (delegate != null) {
+            delegate.removeListener(listener);
+        }
     }
 
     private void registerListenerForAllPlayers() {
