@@ -1,11 +1,17 @@
 package eu.decentsoftware.holograms.api.expansion;
 
 import eu.decentsoftware.holograms.api.context.AppContext;
+import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 import eu.decentsoftware.holograms.api.expansion.requirement.ExpansionRequirement;
 
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * Represents an app expansion for the additional functionality.
+ *
+ * @author ZorTik
+ */
 public interface Expansion {
 
     /**
@@ -26,8 +32,15 @@ public interface Expansion {
      */
     default void onDisable(ExpansionContext context, AppContext appContext) {
         // Auto-cleanup by default
-        context.clear();
+        context.close();
     }
+
+    /**
+     * Returns the unique identifier of this expansion.
+     *
+     * @return the unique identifier
+     */
+    String getId();
 
     /**
      * Returns the name of this expansion.

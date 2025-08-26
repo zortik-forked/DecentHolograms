@@ -58,7 +58,13 @@ public abstract class DecentCommand extends Command implements CommandBase {
 		return this;
 	}
 
-	@Override
+    @Override
+    public CommandBase removeSubCommand(CommandBase commandBase) {
+        subCommands.remove(commandBase.getName());
+        return this;
+    }
+
+    @Override
 	public boolean execute(CommandSender sender, String s, String[] args) {
 		try {
 			return this.handle(sender, args);

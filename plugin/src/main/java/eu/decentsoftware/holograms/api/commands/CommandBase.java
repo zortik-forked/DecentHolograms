@@ -52,6 +52,14 @@ public interface CommandBase {
 	 */
 	CommandBase addSubCommand(CommandBase commandBase);
 
+    /**
+     * Removes a SubCommand from this Command.
+     *
+     * @param commandBase The instance of {@link CommandBase} you want to remove.
+     * @return Instance of this Command.
+     */
+    CommandBase removeSubCommand(CommandBase commandBase);
+
 	/**
 	 * Get a sub command by name.
 	 *

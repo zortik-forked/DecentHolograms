@@ -1,0 +1,38 @@
+package eu.decentsoftware.holograms.api.expansion.context;
+
+import java.util.UUID;
+
+/**
+ * Per-expansion context to hold resources lifecycle, tied to the expansion.
+ *
+ * @author ZorTik
+ */
+public interface ExpansionContext {
+
+    /**
+     * Registers a command.
+     *
+     * @param registerCommandCall the command registration details
+     * @return a unique identifier for the registration
+     */
+    UUID registerCommand(RegisterCommandCall registerCommandCall);
+
+    /**
+     * Unregisters a command.
+     *
+     * @param registrationId the unique identifier of the registration
+     */
+    void unregisterCommand(UUID registrationId);
+
+    /**
+     * Cleans up all associated resources with the holding expansion.
+     */
+    void close();
+
+    /**
+     * Checks if the context is already closed.
+     *
+     * @return true if the context is closed, false otherwise
+     */
+    boolean isClosed();
+}
