@@ -6,7 +6,6 @@ import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
 import eu.decentsoftware.holograms.api.expansion.*;
 import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
 import eu.decentsoftware.holograms.api.expansion.external.DefaultExternalExpansionService;
-import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionPackage;
 import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionService;
 import eu.decentsoftware.holograms.api.features.FeatureManager;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
@@ -84,7 +83,7 @@ public final class DecentHolograms {
         this.expansionActivator = new DefaultExpansionActivator(
                 new DefaultAppContextFactory(),
                 new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, getLogger()), getLogger());
-        this.expansionLoader = new DefaultExpansionLoader();
+        this.expansionLoader = ExpansionLoader.DEFAULT_LOADER;
         this.externalExpansionService = new DefaultExternalExpansionService(
                 prepareExpansionsFolder(), expansionLoader, expansionRegistry);
 
@@ -92,8 +91,7 @@ public final class DecentHolograms {
         pm.registerEvents(new PlayerListener(this), this.plugin);
         pm.registerEvents(new WorldListener(hologramManager), this.plugin);
 
-        initializeExpansions();
-        activateExpansions();
+        initializeAndActivateExpansions();
 
         setupMetrics();
         checkForUpdates();
@@ -140,7 +138,7 @@ public final class DecentHolograms {
         return expansionsFolder;
     }
 
-    private void initializeExpansions() {
+    private void initializeAndActivateExpansions() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
         // Load expansions from the main class path
@@ -153,9 +151,8 @@ public final class DecentHolograms {
         externalExpansionService
                 .getAvailableExpansionPackages()
                 .forEach(expansionName -> externalExpansionService.loadExpansionPackage(expansionName));
-    }
 
-    private void activateExpansions() {
+        // Activate all loaded expansions
         expansionRegistry
                 .getAllExpansions()
                 .forEach(expansion -> expansionActivator.activateExpansion(expansion));

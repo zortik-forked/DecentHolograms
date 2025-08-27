@@ -3,6 +3,7 @@ package eu.decentsoftware.holograms.api.expansion;
 import java.io.File;
 
 public interface ExpansionLoader {
+    ExpansionLoader DEFAULT_LOADER = new DefaultExpansionLoader();
 
     /**
      * Load expansions using the provided class loader.
