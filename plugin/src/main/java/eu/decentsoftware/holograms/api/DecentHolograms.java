@@ -3,13 +3,8 @@ package eu.decentsoftware.holograms.api;
 import eu.decentsoftware.holograms.api.animations.AnimationManager;
 import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
-import eu.decentsoftware.holograms.api.expansion.DefaultExpansionActivator;
-import eu.decentsoftware.holograms.api.expansion.DefaultExpansionRegistry;
-import eu.decentsoftware.holograms.api.expansion.ExpansionActivator;
-import eu.decentsoftware.holograms.api.expansion.ExpansionRegistry;
+import eu.decentsoftware.holograms.api.expansion.*;
 import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
-import eu.decentsoftware.holograms.api.expansion.source.CompositeExpansionSource;
-import eu.decentsoftware.holograms.api.expansion.source.ExpansionSource;
 import eu.decentsoftware.holograms.api.features.FeatureManager;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import eu.decentsoftware.holograms.api.holograms.HologramManager;
@@ -38,8 +33,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -63,6 +56,7 @@ public final class DecentHolograms {
     private Ticker ticker;
     private ExpansionRegistry expansionRegistry;
     private ExpansionActivator expansionActivator;
+    private ExpansionLoader expansionLoader;
     private boolean updateAvailable;
 
     DecentHolograms(@NonNull JavaPlugin plugin) {
@@ -86,6 +80,7 @@ public final class DecentHolograms {
         this.expansionActivator = new DefaultExpansionActivator(
                 new DefaultAppContextFactory(),
                 new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, getLogger()), getLogger());
+        this.expansionLoader = new DefaultExpansionLoader();
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);
@@ -130,17 +125,13 @@ public final class DecentHolograms {
     }
 
     private void initializeBuiltInExpansions() {
-        List<ExpansionSource> expansionSources = new ArrayList<>();
-        // TODO: Add built-in sources
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
-        ExpansionSource expansionSource = new CompositeExpansionSource(expansionSources);
-        expansionSource
-                .getExpansions()
-                .forEach(expansion -> {
-                    expansionRegistry.registerExpansion(expansion);
+        expansionLoader.loadExpansions(classLoader).forEach(expansion -> {
+            expansionRegistry.registerExpansion(expansion);
 
-                    expansionActivator.activate(expansion);
-                });
+            expansionActivator.activateExpansion(expansion);
+        });
     }
 
     private void initializeNmsAdapter() {

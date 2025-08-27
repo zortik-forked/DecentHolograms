@@ -13,7 +13,7 @@ public interface ExpansionActivator {
      * @param expansion the expansion to activate
      * @return true if the expansion was successfully activated, false otherwise
      */
-    boolean activate(Expansion expansion);
+    boolean activateExpansion(Expansion expansion);
 
     /**
      * Deactivates the given expansion.
@@ -21,7 +21,7 @@ public interface ExpansionActivator {
      * @param expansion the expansion to deactivate
      * @return true if the expansion was successfully deactivated, false otherwise
      */
-    boolean deactivate(Expansion expansion);
+    boolean deactivateExpansion(Expansion expansion);
 
     /**
      * Checks if the given expansion is activated.
@@ -29,5 +29,5 @@ public interface ExpansionActivator {
      * @param expansion the expansion to check
      * @return true if the expansion is activated, false otherwise
      */
-    boolean isActivated(Expansion expansion);
+    boolean isExpansionActivated(Expansion expansion);
 }

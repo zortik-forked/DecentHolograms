@@ -46,8 +46,8 @@ public class DefaultExpansionActivator implements ExpansionActivator {
     }
 
     @Override
-    public boolean activate(Expansion expansion) {
-        if (isActivated(expansion)) {
+    public boolean activateExpansion(Expansion expansion) {
+        if (isExpansionActivated(expansion)) {
             return false;
         }
 
@@ -142,14 +142,14 @@ public class DefaultExpansionActivator implements ExpansionActivator {
                     logger.log(Level.WARNING, "Expansion {0} closed its context, deactivating it.",
                             expansion.getName());
 
-                    deactivate(expansion);
+                    deactivateExpansion(expansion);
                 }
             }
         };
     }
 
     @Override
-    public boolean deactivate(Expansion expansion) {
+    public boolean deactivateExpansion(Expansion expansion) {
         ExpansionContext context = contexts.remove(expansion.getId());
         if (context == null) {
             return false;
@@ -171,7 +171,7 @@ public class DefaultExpansionActivator implements ExpansionActivator {
     }
 
     @Override
-    public boolean isActivated(Expansion expansion) {
+    public boolean isExpansionActivated(Expansion expansion) {
         return contexts.containsKey(expansion.getId());
     }
 }
