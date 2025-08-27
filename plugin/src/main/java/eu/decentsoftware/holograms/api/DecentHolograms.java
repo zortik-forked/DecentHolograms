@@ -5,6 +5,9 @@ import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
 import eu.decentsoftware.holograms.api.expansion.*;
 import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
+import eu.decentsoftware.holograms.api.expansion.external.DefaultExternalExpansionService;
+import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionPackage;
+import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionService;
 import eu.decentsoftware.holograms.api.features.FeatureManager;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import eu.decentsoftware.holograms.api.holograms.HologramManager;
@@ -57,6 +60,7 @@ public final class DecentHolograms {
     private ExpansionRegistry expansionRegistry;
     private ExpansionActivator expansionActivator;
     private ExpansionLoader expansionLoader;
+    private ExternalExpansionService externalExpansionService;
     private boolean updateAvailable;
 
     DecentHolograms(@NonNull JavaPlugin plugin) {
@@ -81,12 +85,15 @@ public final class DecentHolograms {
                 new DefaultAppContextFactory(),
                 new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, getLogger()), getLogger());
         this.expansionLoader = new DefaultExpansionLoader();
+        this.externalExpansionService = new DefaultExternalExpansionService(
+                prepareExpansionsFolder(), expansionLoader, expansionRegistry);
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);
         pm.registerEvents(new WorldListener(hologramManager), this.plugin);
 
-        initializeBuiltInExpansions();
+        initializeExpansions();
+        activateExpansions();
 
         setupMetrics();
         checkForUpdates();
@@ -124,14 +131,34 @@ public final class DecentHolograms {
         EventFactory.fireReloadEvent();
     }
 
-    private void initializeBuiltInExpansions() {
+    private File prepareExpansionsFolder() {
+        File expansionsFolder = new File(plugin.getDataFolder(), "expansions");
+        if (!expansionsFolder.exists() && !expansionsFolder.mkdirs()) {
+            Log.error("Could not create expansions folder: " + expansionsFolder.getAbsolutePath());
+        }
+
+        return expansionsFolder;
+    }
+
+    private void initializeExpansions() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
-        expansionLoader.loadExpansions(classLoader).forEach(expansion -> {
-            expansionRegistry.registerExpansion(expansion);
+        // Load expansions from the main class path
+        expansionLoader.loadExpansions(classLoader)
+                .forEach(expansion -> {
+                    expansionRegistry.registerExpansion(expansion);
+                });
 
-            expansionActivator.activateExpansion(expansion);
-        });
+        // Load expansions from the expansions folder
+        externalExpansionService
+                .getAvailableExpansionPackages()
+                .forEach(expansionName -> externalExpansionService.loadExpansionPackage(expansionName));
+    }
+
+    private void activateExpansions() {
+        expansionRegistry
+                .getAllExpansions()
+                .forEach(expansion -> expansionActivator.activateExpansion(expansion));
     }
 
     private void initializeNmsAdapter() {
