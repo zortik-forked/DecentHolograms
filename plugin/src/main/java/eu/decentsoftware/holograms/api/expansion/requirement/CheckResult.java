@@ -23,6 +23,15 @@ public interface CheckResult {
     boolean isSuccess();
 
     /**
+     * Whether this result should be logged or not.
+     *
+     * @return true if the result is silent, false otherwise
+     */
+    default boolean isSilent() {
+        return false;
+    }
+
+    /**
      * Creates a successful CheckResult.
      *
      * @return a successful CheckResult

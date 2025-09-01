@@ -34,7 +34,7 @@ public class EnabledByConfigRequirement implements ExpansionRequirement {
         if (context.getExpansionConfig().isEnabled()) {
             return CheckResult.success();
         } else {
-            return CheckResult.failure("Expansion is disabled in the config.");
+            return new DisabledByConfigResult();
         }
     }
 }

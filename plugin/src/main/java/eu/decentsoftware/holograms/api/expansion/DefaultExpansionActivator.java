@@ -85,9 +85,11 @@ public class DefaultExpansionActivator implements ExpansionActivator {
                 continue;
             }
 
-            String errorMessage = checkResult.getErrorMessage();
-            logger.log(Level.WARNING, "Expansion {0} cannot be activated: {1}",
-                    new Object[]{expansion.getName(), errorMessage != null ? errorMessage : "Unknown reason"});
+            if (!checkResult.isSilent()) {
+                String errorMessage = checkResult.getErrorMessage();
+                logger.log(Level.WARNING, "Expansion {0} cannot be activated: {1}",
+                        new Object[]{expansion.getName(), errorMessage != null ? errorMessage : "Unknown reason"});
+            }
 
             return false;
         }
