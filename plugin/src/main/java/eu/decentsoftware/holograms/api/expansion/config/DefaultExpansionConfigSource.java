@@ -2,6 +2,7 @@ package eu.decentsoftware.holograms.api.expansion.config;
 
 import eu.decentsoftware.holograms.api.expansion.Expansion;
 import eu.decentsoftware.holograms.api.utils.Log;
+import eu.decentsoftware.holograms.api.utils.config.ConfigUtils;
 import eu.decentsoftware.holograms.api.utils.file.FileUtils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
@@ -43,10 +44,7 @@ public class DefaultExpansionConfigSource implements ExpansionConfigSource {
         if (config.contains("settings")) {
             settings = config.getConfigurationSection("settings");
 
-            ConfigurationSection defaults = new MemoryConfiguration();
-            expansion.applyConfigurationDefaults(defaults);
-
-            if (mergeMissing(defaults, config)) {
+            if (mergeDefaults(expansion, config)) {
                 shouldBeSaved = true;
             }
         } else {
@@ -65,27 +63,17 @@ public class DefaultExpansionConfigSource implements ExpansionConfigSource {
     }
 
     /**
-     * Merges missing keys from the 'from' section into the 'to' section.
+     * Merges the default configuration values provided by the expansion into the given config section.
      *
-     * @param from the source configuration section
-     * @param to the target configuration section
+     * @param expansion the expansion providing the default values
+     * @param config the configuration section to merge defaults into
      * @return true if any changes were made, false otherwise
      */
-    private static boolean mergeMissing(ConfigurationSection from, ConfigurationSection to) {
-        boolean changed = false;
-        for (String key : from.getKeys(false)) {
-            if (!to.contains(key)) {
-                to.set(key, from.get(key));
+    private static boolean mergeDefaults(Expansion expansion, ConfigurationSection config) {
+        ConfigurationSection defaults = new MemoryConfiguration();
+        expansion.applyConfigurationDefaults(defaults);
 
-                changed = true;
-            } else if (from.isConfigurationSection(key) && to.isConfigurationSection(key)) {
-                if (mergeMissing(from.getConfigurationSection(key), to.getConfigurationSection(key))) {
-                    changed = true;
-                }
-            }
-        }
-
-        return changed;
+        return ConfigUtils.merge(defaults, config);
     }
 
     /**
