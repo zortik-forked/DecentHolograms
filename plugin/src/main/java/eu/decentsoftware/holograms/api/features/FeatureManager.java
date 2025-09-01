@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * This class represents a Manager for handling features.
  *
- * TODO: deprecation notice
+ * @deprecated Deprecated in favor of expansions system.
  */
 @Deprecated
 public class FeatureManager {

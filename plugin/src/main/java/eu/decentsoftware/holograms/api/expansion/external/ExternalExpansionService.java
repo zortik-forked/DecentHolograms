@@ -23,6 +23,30 @@ public interface ExternalExpansionService {
     void unloadExpansionPackage(String name);
 
     /**
+     * Activates an expansion package by its name.
+     *
+     * @param name The name of the expansion package to activate.
+     * @return true if the expansion package was successfully activated, false otherwise.
+     */
+    boolean activateExpansionPackage(String name);
+
+    /**
+     * Deactivates an expansion package by its name.
+     *
+     * @param name The name of the expansion package to deactivate.
+     * @return true if the expansion package was successfully deactivated, false otherwise.
+     */
+    boolean deactivateExpansionPackage(String name);
+
+    /**
+     * Checks if an expansion package is activated.
+     *
+     * @param name The name of the expansion package.
+     * @return true if the expansion package is activated, false otherwise.
+     */
+    boolean isExpansionPackageActivated(String name);
+
+    /**
      * Returns an expansion package if it is loaded.
      *
      * @param name The name of the expansion package.

@@ -2,6 +2,7 @@ package eu.decentsoftware.holograms.api.expansion;
 
 import eu.decentsoftware.holograms.api.context.AppContext;
 import eu.decentsoftware.holograms.api.context.AppContextFactory;
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfigSource;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextEventHandler;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextFactory;
@@ -24,6 +25,7 @@ import java.util.logging.Logger;
 public class DefaultExpansionActivator implements ExpansionActivator {
     private final AppContextFactory appContextFactory;
     private final ExpansionContextFactory expansionContextFactory;
+    private final ExpansionConfigSource configSource;
     private final Logger logger;
 
     private final Map<String, ExpansionContext> contexts;
@@ -37,9 +39,11 @@ public class DefaultExpansionActivator implements ExpansionActivator {
      * @param logger the logger to use
      */
     public DefaultExpansionActivator(
-            AppContextFactory appContextFactory, ExpansionContextFactory expansionContextFactory, Logger logger) {
+            AppContextFactory appContextFactory,
+            ExpansionContextFactory expansionContextFactory, ExpansionConfigSource configSource, Logger logger) {
         this.appContextFactory = appContextFactory;
         this.expansionContextFactory = expansionContextFactory;
+        this.configSource = configSource;
         this.logger = logger;
         this.contexts = new ConcurrentHashMap<>();
         this.deactivatingExpansions = new CopyOnWriteArrayList<>();
@@ -92,6 +96,7 @@ public class DefaultExpansionActivator implements ExpansionActivator {
      */
     private boolean doActivate(Expansion expansion, AppContext appContext) {
         ExpansionContext context = expansionContextFactory.createExpansionContext(expansion);
+
         try {
             expansion.onEnable(context, appContext);
         } catch (Exception e) {
@@ -161,6 +166,9 @@ public class DefaultExpansionActivator implements ExpansionActivator {
 
             expansion.onDisable(context, appContext);
 
+            if (context.getExpansionConfig().isChanged()) {
+                configSource.saveConfig(expansion, context.getExpansionConfig());
+            }
             if (!context.isClosed()) {
                 context.close();
             }

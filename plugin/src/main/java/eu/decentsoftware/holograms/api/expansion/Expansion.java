@@ -3,6 +3,7 @@ package eu.decentsoftware.holograms.api.expansion;
 import eu.decentsoftware.holograms.api.context.AppContext;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 import eu.decentsoftware.holograms.api.expansion.requirement.ExpansionRequirement;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -70,11 +71,29 @@ public interface Expansion {
     String getVersion();
 
     /**
+     * Applies default configuration settings to the provided settings section.
+     *
+     * @param settings the configuration section to apply defaults to
+     */
+    default void applyConfigurationDefaults(ConfigurationSection settings) {
+        // No default settings
+    }
+
+    /**
      * Returns a collection of requirements that must be met for this expansion to be able to be enabled.
      *
      * @return a collection of expansion requirements
      */
     default Collection<? extends ExpansionRequirement> getRequirements() {
         return Collections.emptyList();
+    }
+
+    /**
+     * Returns the default 'enabled' state of this expansion.
+     *
+     * @return true if the expansion is enabled by default, false otherwise
+     */
+    default boolean isEnabledByDefault() {
+        return false;
     }
 }

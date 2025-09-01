@@ -4,6 +4,9 @@ import eu.decentsoftware.holograms.api.animations.AnimationManager;
 import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
 import eu.decentsoftware.holograms.api.expansion.*;
+import eu.decentsoftware.holograms.api.expansion.config.DefaultExpansionConfigSource;
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfig;
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfigSource;
 import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
 import eu.decentsoftware.holograms.api.expansion.external.DefaultExternalExpansionService;
 import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionService;
@@ -25,6 +28,8 @@ import eu.decentsoftware.holograms.nms.NmsAdapterFactory;
 import eu.decentsoftware.holograms.nms.NmsPacketListenerService;
 import eu.decentsoftware.holograms.nms.api.DecentHologramsNmsException;
 import eu.decentsoftware.holograms.nms.api.NmsAdapter;
+import eu.decentsoftware.holograms.plugin.file.DefaultFileSystemService;
+import eu.decentsoftware.holograms.plugin.file.FileSystemService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bstats.bukkit.Metrics;
@@ -42,7 +47,7 @@ import java.util.logging.Logger;
  * and fields that are used to manage DecentHolograms. You can get the instance
  * of this class by using {@link DecentHologramsAPI#get()}.
  *
- * @author d0by
+ * @author d0by, ZorTik
  * @see DecentHologramsAPI
  */
 @Getter
@@ -56,7 +61,9 @@ public final class DecentHolograms {
     private FeatureManager featureManager;
     private AnimationManager animationManager;
     private Ticker ticker;
+    private FileSystemService fileSystemService;
     private ExpansionRegistry expansionRegistry;
+    private ExpansionConfigSource expansionConfigSource;
     private ExpansionActivator expansionActivator;
     private ExpansionLoader expansionLoader;
     private ExternalExpansionService externalExpansionService;
@@ -79,13 +86,18 @@ public final class DecentHolograms {
         this.animationManager = new AnimationManager(this);
         DecentHologramsNmsPacketListener nmsPacketListener = new DecentHologramsNmsPacketListener(hologramManager);
         this.nmsPacketListenerService = new NmsPacketListenerService(plugin, nmsAdapter, nmsPacketListener);
+        this.fileSystemService = new DefaultFileSystemService(plugin);
         this.expansionRegistry = new DefaultExpansionRegistry();
+        this.expansionConfigSource = new DefaultExpansionConfigSource(fileSystemService.getExpansionConfigsDirectory());
         this.expansionActivator = new DefaultExpansionActivator(
                 new DefaultAppContextFactory(),
-                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, getLogger()), getLogger());
+                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, expansionConfigSource, getLogger()),
+                expansionConfigSource,
+                getLogger());
         this.expansionLoader = ExpansionLoader.DEFAULT_LOADER;
+
         this.externalExpansionService = new DefaultExternalExpansionService(
-                prepareExpansionsFolder(), expansionLoader, expansionRegistry);
+                fileSystemService.getExpansionJarsDirectory(), expansionLoader, expansionRegistry, expansionActivator);
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);
@@ -129,15 +141,6 @@ public final class DecentHolograms {
         EventFactory.fireReloadEvent();
     }
 
-    private File prepareExpansionsFolder() {
-        File expansionsFolder = new File(plugin.getDataFolder(), "expansions");
-        if (!expansionsFolder.exists() && !expansionsFolder.mkdirs()) {
-            Log.error("Could not create expansions folder: " + expansionsFolder.getAbsolutePath());
-        }
-
-        return expansionsFolder;
-    }
-
     private void initializeAndActivateExpansions() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
@@ -155,7 +158,15 @@ public final class DecentHolograms {
         // Activate all loaded expansions
         expansionRegistry
                 .getAllExpansions()
-                .forEach(expansion -> expansionActivator.activateExpansion(expansion));
+                .forEach(expansion -> {
+                    ExpansionConfig config = expansionConfigSource.loadOrCreateConfig(expansion);
+                    if (!config.isEnabled()) {
+                        // Expansion is disabled by config
+                        return;
+                    }
+
+                    expansionActivator.activateExpansion(expansion);
+                });
     }
 
     private void initializeNmsAdapter() {

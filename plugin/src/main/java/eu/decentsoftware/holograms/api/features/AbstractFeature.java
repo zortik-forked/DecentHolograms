@@ -4,7 +4,7 @@ package eu.decentsoftware.holograms.api.features;
  * This interface represents a feature. You can create your
  * own features doing anything you want.
  *
- * TODO: deprecation notice
+ * @deprecated Deprecated in favor of expansions system.
  */
 @Deprecated
 public abstract class AbstractFeature {

@@ -1,5 +1,6 @@
 package eu.decentsoftware.holograms.api.expansion.context;
 
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfig;
 import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
 
 import java.util.UUID;
@@ -47,6 +48,13 @@ public interface ExpansionContext {
      * @param handler the event handler to add
      */
     void addContextEventHandler(ExpansionContextEventHandler handler);
+
+    /**
+     * Gets the current configuration of the expansion.
+     *
+     * @return the current expansion configuration
+     */
+    ExpansionConfig getExpansionConfig();
 
     /**
      * Cleans up all associated resources with the holding expansion.

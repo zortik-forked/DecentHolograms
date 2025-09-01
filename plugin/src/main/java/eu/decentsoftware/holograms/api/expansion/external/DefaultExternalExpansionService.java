@@ -1,6 +1,7 @@
 package eu.decentsoftware.holograms.api.expansion.external;
 
 import eu.decentsoftware.holograms.api.expansion.Expansion;
+import eu.decentsoftware.holograms.api.expansion.ExpansionActivator;
 import eu.decentsoftware.holograms.api.expansion.ExpansionLoader;
 import eu.decentsoftware.holograms.api.expansion.ExpansionRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +18,7 @@ public class DefaultExternalExpansionService implements ExternalExpansionService
     private final File expansionDirectory;
     private final ExpansionLoader expansionLoader;
     private final ExpansionRegistry expansionRegistry;
+    private final ExpansionActivator expansionActivator;
 
     private final Map<String, ExternalExpansionPackage> loadedExpansionPackages;
 
@@ -28,10 +30,13 @@ public class DefaultExternalExpansionService implements ExternalExpansionService
      * @param expansionRegistry the registry to register loaded expansions
      */
     public DefaultExternalExpansionService(
-            File expansionDirectory, ExpansionLoader expansionLoader, ExpansionRegistry expansionRegistry) {
+            File expansionDirectory,
+            ExpansionLoader expansionLoader,
+            ExpansionRegistry expansionRegistry, ExpansionActivator expansionActivator) {
         this.expansionDirectory = expansionDirectory;
         this.expansionLoader = expansionLoader;
         this.expansionRegistry = expansionRegistry;
+        this.expansionActivator = expansionActivator;
         this.loadedExpansionPackages = new ConcurrentHashMap<>();
     }
 
@@ -65,6 +70,48 @@ public class DefaultExternalExpansionService implements ExternalExpansionService
             expansionPackage.getExpansions().forEach(expansion ->
                     expansionRegistry.unregisterExpansion(expansion.getId()));
         }
+    }
+
+    @Override
+    public boolean activateExpansionPackage(String name) {
+        if (isExpansionPackageActivated(name)) {
+            return false;
+        }
+
+        ExternalExpansionPackage expansionPackage = getLoadedExpansionPackage(name);
+        if (expansionPackage == null) {
+            return false;
+        }
+
+        expansionPackage.getExpansions().forEach(expansionActivator::activateExpansion);
+        return true;
+    }
+
+    @Override
+    public boolean deactivateExpansionPackage(String name) {
+        if (!isExpansionPackageActivated(name)) {
+            return false;
+        }
+
+        ExternalExpansionPackage expansionPackage = getLoadedExpansionPackage(name);
+        if (expansionPackage == null) {
+            return false;
+        }
+
+        expansionPackage.getExpansions().forEach(expansionActivator::deactivateExpansion);
+        return true;
+    }
+
+    @Override
+    public boolean isExpansionPackageActivated(String name) {
+        ExternalExpansionPackage expansionPackage = getLoadedExpansionPackage(name);
+        if (expansionPackage == null) {
+            return false;
+        }
+
+        return expansionPackage.getExpansions()
+                .stream()
+                .anyMatch(expansionActivator::isExpansionActivated);
     }
 
     @Override

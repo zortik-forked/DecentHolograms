@@ -2,6 +2,7 @@ package eu.decentsoftware.holograms.api.expansion.context;
 
 import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.commands.DecentCommand;
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfig;
 import eu.decentsoftware.holograms.nms.NmsPacketListenerService;
 import eu.decentsoftware.holograms.nms.api.NmsPacketListener;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +24,7 @@ import java.util.logging.Logger;
 public class DefaultExpansionContext implements ExpansionContext {
     private final CommandManager commandManager;
     private final NmsPacketListenerService packetListenerService;
+    private final ExpansionConfig config;
     private final Logger logger;
 
     private final Map<UUID, Runnable> commandUnregisterCallbacks;
@@ -32,9 +34,11 @@ public class DefaultExpansionContext implements ExpansionContext {
     private boolean closed;
 
     public DefaultExpansionContext(
-            CommandManager commandManager, NmsPacketListenerService packetListenerService, Logger logger) {
+            CommandManager commandManager,
+            NmsPacketListenerService packetListenerService, ExpansionConfig config, Logger logger) {
         this.commandManager = commandManager;
         this.packetListenerService = packetListenerService;
+        this.config = config;
         this.logger = logger;
         this.commandUnregisterCallbacks = new ConcurrentHashMap<>();
         this.registeredPacketListeners = new CopyOnWriteArrayList<>();
@@ -44,7 +48,7 @@ public class DefaultExpansionContext implements ExpansionContext {
 
     @Override
     public UUID registerCommand(RegisterCommandCall registerCommandCall) {
-        Runnable unregisterCallback = registerCommandReturnCallback(registerCommandCall);
+        Runnable unregisterCallback = doRegisterCommandReturnCallback(registerCommandCall);
 
         UUID registrationId = UUID.randomUUID();
         commandUnregisterCallbacks.put(registrationId, unregisterCallback);
@@ -59,7 +63,7 @@ public class DefaultExpansionContext implements ExpansionContext {
      * @param registerCommandCall the command registration details
      * @return a {@link Runnable} that, when run, will unregister the command
      */
-    private @NotNull Runnable registerCommandReturnCallback(RegisterCommandCall registerCommandCall) {
+    private @NotNull Runnable doRegisterCommandReturnCallback(RegisterCommandCall registerCommandCall) {
         DecentCommand command = registerCommandCall.getCommand();
         DecentCommand parent = registerCommandCall.getParent();
 
@@ -103,6 +107,11 @@ public class DefaultExpansionContext implements ExpansionContext {
     @Override
     public void addContextEventHandler(ExpansionContextEventHandler handler) {
         eventHandlers.add(handler);
+    }
+
+    @Override
+    public ExpansionConfig getExpansionConfig() {
+        return config;
     }
 
     /**
