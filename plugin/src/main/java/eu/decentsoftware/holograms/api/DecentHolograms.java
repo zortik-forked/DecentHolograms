@@ -112,6 +112,8 @@ public final class DecentHolograms {
     }
 
     void disable() {
+        deactivateAndUnloadExpansions();
+
         this.nmsPacketListenerService.shutdown();
         this.featureManager.destroy();
         this.hologramManager.destroy();
@@ -131,6 +133,8 @@ public final class DecentHolograms {
      * @see DecentHologramsReloadEvent
      */
     public void reload() {
+        deactivateAndUnloadExpansions();
+
         Settings.reload();
         Lang.reload();
 
@@ -138,9 +142,16 @@ public final class DecentHolograms {
         this.hologramManager.reload();
         this.featureManager.reload();
 
+        initializeAndActivateExpansions();
+
         EventFactory.fireReloadEvent();
     }
 
+    /**
+     * Initialize and activate expansions from the main class path and the expansions' folder.
+     *
+     * @author ZorTik
+     */
     private void initializeAndActivateExpansions() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
@@ -158,15 +169,16 @@ public final class DecentHolograms {
         // Activate all loaded expansions
         expansionRegistry
                 .getAllExpansions()
-                .forEach(expansion -> {
-                    ExpansionConfig config = expansionConfigSource.loadOrCreateConfig(expansion);
-                    if (!config.isEnabled()) {
-                        // Expansion is disabled by config
-                        return;
-                    }
+                .forEach(expansion -> expansionActivator.activateExpansion(expansion));
+    }
 
-                    expansionActivator.activateExpansion(expansion);
-                });
+    /**
+     * Deactivate and unload all expansions.
+     *
+     * @author ZorTik
+     */
+    private void deactivateAndUnloadExpansions() {
+        // TODO: deactivate expansions
     }
 
     private void initializeNmsAdapter() {

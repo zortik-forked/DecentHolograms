@@ -72,6 +72,8 @@ public interface Expansion {
 
     /**
      * Applies default configuration settings to the provided settings section.
+     * The provided settings section is ALWAYS empty and the purpose of this method is to
+     * populate it to the desired default state.
      *
      * @param settings the configuration section to apply defaults to
      */

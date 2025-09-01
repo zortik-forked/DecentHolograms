@@ -40,4 +40,24 @@ public interface CheckResult {
             }
         };
     }
+
+    /**
+     * Creates a failed CheckResult with the given error message.
+     *
+     * @param errorMessage the error message, may be null
+     * @return a failed CheckResult
+     */
+    static CheckResult failure(String errorMessage) {
+        return new CheckResult() {
+            @Override
+            public @Nullable String getErrorMessage() {
+                return errorMessage;
+            }
+
+            @Override
+            public boolean isSuccess() {
+                return false;
+            }
+        };
+    }
 }

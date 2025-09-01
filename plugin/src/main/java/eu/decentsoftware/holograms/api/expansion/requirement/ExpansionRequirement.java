@@ -2,6 +2,7 @@ package eu.decentsoftware.holograms.api.expansion.requirement;
 
 import eu.decentsoftware.holograms.api.context.AppContext;
 import eu.decentsoftware.holograms.api.expansion.Expansion;
+import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 
 public interface ExpansionRequirement {
 
@@ -12,5 +13,5 @@ public interface ExpansionRequirement {
      * @param appContext the application context
      * @return the result of the requirement check
      */
-    CheckResult canEnable(Expansion expansion, AppContext appContext);
+    CheckResult canEnable(Expansion expansion, ExpansionContext context, AppContext appContext);
 }

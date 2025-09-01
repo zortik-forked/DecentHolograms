@@ -7,9 +7,11 @@ import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextEventHandler;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContextFactory;
 import eu.decentsoftware.holograms.api.expansion.requirement.CheckResult;
+import eu.decentsoftware.holograms.api.expansion.requirement.EnabledByConfigRequirement;
 import eu.decentsoftware.holograms.api.expansion.requirement.ExpansionRequirement;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,24 +57,30 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             return false;
         }
 
+        ExpansionContext context = expansionContextFactory.createExpansionContext(expansion);
         AppContext appContext = appContextFactory.createAppContext();
-        if (!passesRequirements(expansion, appContext)) {
+        if (!passesRequirements(expansion, context, appContext)) {
             return false;
         }
 
-        return doActivate(expansion, appContext);
+        return doActivate(expansion, context, appContext);
     }
 
     /**
      * Check if all requirements are met.
      *
      * @param expansion the expansion to check
+     * @param context the expansion context
      * @param appContext the application context
      * @return true if all requirements are met, false otherwise
      */
-    private boolean passesRequirements(Expansion expansion, AppContext appContext) {
-        for (ExpansionRequirement requirement : expansion.getRequirements()) {
-            CheckResult checkResult = requirement.canEnable(expansion, appContext);
+    private boolean passesRequirements(Expansion expansion, ExpansionContext context, AppContext appContext) {
+        List<ExpansionRequirement> requirements = new ArrayList<>();
+        requirements.add(EnabledByConfigRequirement.getInstance());
+        requirements.addAll(expansion.getRequirements());
+
+        for (ExpansionRequirement requirement : requirements) {
+            CheckResult checkResult = requirement.canEnable(expansion, context, appContext);
             if (checkResult.isSuccess()) {
                 continue;
             }
@@ -91,12 +99,11 @@ public class DefaultExpansionActivator implements ExpansionActivator {
      * Actually activate the expansion.
      *
      * @param expansion the expansion to activate
+     * @param context the expansion context
      * @param appContext the application context
      * @return true if activation was successful, false otherwise
      */
-    private boolean doActivate(Expansion expansion, AppContext appContext) {
-        ExpansionContext context = expansionContextFactory.createExpansionContext(expansion);
-
+    private boolean doActivate(Expansion expansion, ExpansionContext context, AppContext appContext) {
         try {
             expansion.onEnable(context, appContext);
         } catch (Exception e) {
