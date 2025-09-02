@@ -54,7 +54,7 @@ public class DefaultExpansionActivator implements ExpansionActivator {
     @Override
     public boolean activateExpansion(Expansion expansion) {
         if (isExpansionActivated(expansion)) {
-            return false;
+            throw new IllegalStateException("Expansion " + expansion.getName() + " is already activated.");
         }
 
         ExpansionContext context = expansionContextFactory.createExpansionContext(expansion);
@@ -163,10 +163,10 @@ public class DefaultExpansionActivator implements ExpansionActivator {
     }
 
     @Override
-    public boolean deactivateExpansion(Expansion expansion) {
+    public void deactivateExpansion(Expansion expansion) {
         ExpansionContext context = contexts.remove(expansion.getId());
         if (context == null) {
-            return false;
+            throw new IllegalStateException("Expansion " + expansion.getName() + " is not activated.");
         }
 
         deactivatingExpansions.add(expansion.getId());
@@ -184,7 +184,6 @@ public class DefaultExpansionActivator implements ExpansionActivator {
         } finally {
             deactivatingExpansions.remove(expansion.getId());
         }
-        return true;
     }
 
     @Override

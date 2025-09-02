@@ -4,6 +4,8 @@ import eu.decentsoftware.holograms.api.context.AppContext;
 import eu.decentsoftware.holograms.api.expansion.context.ExpansionContext;
 import eu.decentsoftware.holograms.api.expansion.requirement.ExpansionRequirement;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +71,16 @@ public interface Expansion {
      * @return the version of the expansion
      */
     String getVersion();
+
+    /**
+     * Returns the plugin that provides this expansion.
+     *
+     * @return the plugin instance, or null if not applicable
+     */
+    @Nullable
+    default Plugin getPlugin() {
+        return null;
+    }
 
     /**
      * Applies default configuration settings to the provided settings section.

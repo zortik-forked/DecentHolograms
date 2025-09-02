@@ -1,9 +1,14 @@
 package eu.decentsoftware.holograms.api.expansion;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 
 public interface ExpansionLoader {
-    ExpansionLoader DEFAULT_LOADER = new DefaultExpansionLoader();
+
+    static @NotNull ExpansionLoader getDefaultLoader() {
+        return new DefaultExpansionLoader();
+    }
 
     /**
      * Load expansions using the provided class loader.

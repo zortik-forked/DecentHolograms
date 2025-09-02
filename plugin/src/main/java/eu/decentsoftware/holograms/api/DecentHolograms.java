@@ -5,11 +5,12 @@ import eu.decentsoftware.holograms.api.commands.CommandManager;
 import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
 import eu.decentsoftware.holograms.api.expansion.*;
 import eu.decentsoftware.holograms.api.expansion.config.DefaultExpansionConfigSource;
-import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfig;
 import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfigSource;
 import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
-import eu.decentsoftware.holograms.api.expansion.external.DefaultExternalExpansionService;
-import eu.decentsoftware.holograms.api.expansion.external.ExternalExpansionService;
+import eu.decentsoftware.holograms.api.expansion.registry.DefaultExpansionRegistry;
+import eu.decentsoftware.holograms.api.expansion.registry.ExpansionRegistry;
+import eu.decentsoftware.holograms.api.expansion.source.BuiltInExpansionSource;
+import eu.decentsoftware.holograms.api.expansion.source.JarFileExpansionSource;
 import eu.decentsoftware.holograms.api.features.FeatureManager;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import eu.decentsoftware.holograms.api.holograms.HologramManager;
@@ -63,10 +64,7 @@ public final class DecentHolograms {
     private Ticker ticker;
     private FileSystemService fileSystemService;
     private ExpansionRegistry expansionRegistry;
-    private ExpansionConfigSource expansionConfigSource;
-    private ExpansionActivator expansionActivator;
-    private ExpansionLoader expansionLoader;
-    private ExternalExpansionService externalExpansionService;
+    private ExpansionSourceRegistry expansionSourceRegistry;
     private boolean updateAvailable;
 
     DecentHolograms(@NonNull JavaPlugin plugin) {
@@ -87,17 +85,8 @@ public final class DecentHolograms {
         DecentHologramsNmsPacketListener nmsPacketListener = new DecentHologramsNmsPacketListener(hologramManager);
         this.nmsPacketListenerService = new NmsPacketListenerService(plugin, nmsAdapter, nmsPacketListener);
         this.fileSystemService = new DefaultFileSystemService(plugin);
-        this.expansionRegistry = new DefaultExpansionRegistry();
-        this.expansionConfigSource = new DefaultExpansionConfigSource(fileSystemService.getExpansionConfigsDirectory());
-        this.expansionActivator = new DefaultExpansionActivator(
-                new DefaultAppContextFactory(),
-                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, expansionConfigSource, getLogger()),
-                expansionConfigSource,
-                getLogger());
-        this.expansionLoader = ExpansionLoader.DEFAULT_LOADER;
-
-        this.externalExpansionService = new DefaultExternalExpansionService(
-                fileSystemService.getExpansionJarsDirectory(), expansionLoader, expansionRegistry, expansionActivator);
+        initExpansionRegistry();
+        this.expansionSourceRegistry = new DefaultExpansionSourceRegistry(expansionRegistry);
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);
@@ -147,29 +136,31 @@ public final class DecentHolograms {
         EventFactory.fireReloadEvent();
     }
 
-    /**
-     * Initialize and activate expansions from the main class path and the expansions' folder.
-     *
-     * @author ZorTik
-     */
+    private void initExpansionRegistry() {
+        ExpansionConfigSource configSource = new DefaultExpansionConfigSource(fileSystemService.getExpansionConfigsDirectory());
+        ExpansionActivator activator = new DefaultExpansionActivator(
+                new DefaultAppContextFactory(),
+                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, configSource, getLogger()),
+                configSource,
+                getLogger());
+
+        this.expansionRegistry = new DefaultExpansionRegistry(activator, plugin);
+    }
+
     private void initializeAndActivateExpansions() {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        this.expansionSourceRegistry.registerSource(new BuiltInExpansionSource(ExpansionLoader.getDefaultLoader(), plugin));
 
-        // Load expansions from the main class path
-        expansionLoader.loadExpansions(classLoader)
-                .forEach(expansion -> {
-                    expansionRegistry.registerExpansion(expansion);
-                });
+        File[] jarFiles = fileSystemService.getExpansionJarsDirectory().listFiles();
+        if (jarFiles != null) {
+            for (File jarFile : jarFiles) {
+                if (!jarFile.isFile() || !jarFile.getName().toLowerCase().endsWith(".jar")) {
+                    continue;
+                }
 
-        // Load expansions from the expansions folder
-        externalExpansionService
-                .getAvailableExpansionPackages()
-                .forEach(expansionName -> externalExpansionService.loadExpansionPackage(expansionName));
-
-        // Activate all loaded expansions
-        expansionRegistry
-                .getAllExpansions()
-                .forEach(expansion -> expansionActivator.activateExpansion(expansion));
+                expansionSourceRegistry.registerSource(
+                        new JarFileExpansionSource(jarFile, ExpansionLoader.getDefaultLoader()));
+            }
+        }
     }
 
     /**
@@ -178,7 +169,7 @@ public final class DecentHolograms {
      * @author ZorTik
      */
     private void deactivateAndUnloadExpansions() {
-        // TODO: deactivate expansions
+        expansionSourceRegistry.getAllSources().forEach(expansionSourceRegistry::unregisterSource);
     }
 
     private void initializeNmsAdapter() {

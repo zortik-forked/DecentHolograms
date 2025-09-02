@@ -12,6 +12,7 @@ public interface ExpansionActivator {
      *
      * @param expansion the expansion to activate
      * @return true if the expansion was successfully activated, false otherwise
+     * @throws IllegalStateException if the expansion is already activated
      */
     boolean activateExpansion(Expansion expansion);
 
@@ -21,7 +22,7 @@ public interface ExpansionActivator {
      * @param expansion the expansion to deactivate
      * @return true if the expansion was successfully deactivated, false otherwise
      */
-    boolean deactivateExpansion(Expansion expansion);
+    void deactivateExpansion(Expansion expansion);
 
     /**
      * Checks if the given expansion is activated.
