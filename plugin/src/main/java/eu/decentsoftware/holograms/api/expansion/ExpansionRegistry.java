@@ -1,6 +1,5 @@
-package eu.decentsoftware.holograms.api.expansion.registry;
+package eu.decentsoftware.holograms.api.expansion;
 
-import eu.decentsoftware.holograms.api.expansion.Expansion;
 import eu.decentsoftware.holograms.api.expansion.exception.PluginNotLinkedException;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;

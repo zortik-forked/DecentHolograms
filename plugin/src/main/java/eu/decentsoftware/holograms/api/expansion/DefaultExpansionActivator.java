@@ -142,17 +142,8 @@ public class DefaultExpansionActivator implements ExpansionActivator {
         return new ExpansionContextEventHandler() {
             @Override
             public void onContextClosed(ExpansionContext context) {
-                String expansionIdForContext = null;
-                for (String expansionId : contexts.keySet()) {
-                    if (contexts.get(expansionId) != context) {
-                        continue;
-                    }
-
-                    expansionIdForContext = expansionId;
-                }
-
                 // If the expansion is already being deactivated, the context is closed on purpose
-                if (!deactivatingExpansions.contains(expansionIdForContext)) {
+                if (!deactivatingExpansions.contains(expansion.getId())) {
                     logger.log(Level.WARNING, "Expansion {0} closed its context, deactivating it.",
                             expansion.getName());
 
@@ -178,6 +169,7 @@ public class DefaultExpansionActivator implements ExpansionActivator {
             if (context.getExpansionConfig().isChanged()) {
                 configSource.saveConfig(expansion, context.getExpansionConfig());
             }
+
             if (!context.isClosed()) {
                 context.close();
             }

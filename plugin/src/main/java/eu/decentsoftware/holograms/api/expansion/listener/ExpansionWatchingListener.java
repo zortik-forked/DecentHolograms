@@ -1,6 +1,6 @@
 package eu.decentsoftware.holograms.api.expansion.listener;
 
-import eu.decentsoftware.holograms.api.expansion.registry.ExpansionRegistry;
+import eu.decentsoftware.holograms.api.expansion.ExpansionRegistry;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;

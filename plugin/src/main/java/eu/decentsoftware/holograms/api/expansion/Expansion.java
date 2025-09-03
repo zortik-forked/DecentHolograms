@@ -33,8 +33,6 @@ public interface Expansion {
      * @param appContext the application context
      */
     default void onDisable(ExpansionContext context, AppContext appContext) {
-        // Auto-cleanup by default
-        context.close();
     }
 
     /**
@@ -108,6 +106,6 @@ public interface Expansion {
      * @return true if the expansion is enabled by default, false otherwise
      */
     default boolean isEnabledByDefault() {
-        return false;
+        return true;
     }
 }

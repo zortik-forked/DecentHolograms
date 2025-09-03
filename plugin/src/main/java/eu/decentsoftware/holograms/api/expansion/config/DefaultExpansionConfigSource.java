@@ -44,7 +44,7 @@ public class DefaultExpansionConfigSource implements ExpansionConfigSource {
         if (config.contains("settings")) {
             settings = config.getConfigurationSection("settings");
 
-            if (mergeDefaults(expansion, config)) {
+            if (mergeDefaults(expansion, settings)) {
                 shouldBeSaved = true;
             }
         } else {

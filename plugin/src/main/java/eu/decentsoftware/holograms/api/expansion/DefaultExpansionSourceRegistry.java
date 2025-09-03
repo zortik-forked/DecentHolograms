@@ -1,7 +1,7 @@
 package eu.decentsoftware.holograms.api.expansion;
 
-import eu.decentsoftware.holograms.api.expansion.registry.ExpansionRegistry;
 import eu.decentsoftware.holograms.api.expansion.source.ExpansionSource;
+import eu.decentsoftware.holograms.api.utils.Log;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +24,8 @@ public class DefaultExpansionSourceRegistry implements ExpansionSourceRegistry {
         if (expansionIdsBySource.put(source.getId(), ids) != null) {
             throw new IllegalStateException("Expansion source '" + source.getId() + "' is already registered.");
         }
+
+        Log.info("Registered expansion source: " + source.getId() + ", loading expansions...");
 
         source.loadExpansions().forEach(expansion -> {
             ids.add(expansion.getId());

@@ -1,7 +1,5 @@
-package eu.decentsoftware.holograms.api.expansion.registry;
+package eu.decentsoftware.holograms.api.expansion;
 
-import eu.decentsoftware.holograms.api.expansion.Expansion;
-import eu.decentsoftware.holograms.api.expansion.ExpansionActivator;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -14,7 +12,7 @@ public class DefaultExpansionRegistry implements ExpansionRegistry {
     private final ExpansionActivator activator;
     private final Plugin plugin;
     private final Map<String, Expansion> expansions;
-    private final Map<Plugin, List<Expansion>> expansionsForPlugin;
+    private final Map<String, List<Expansion>> expansionsForPlugin;
 
     public DefaultExpansionRegistry(ExpansionActivator activator, Plugin plugin) {
         this.activator = activator;
@@ -29,16 +27,18 @@ public class DefaultExpansionRegistry implements ExpansionRegistry {
             throw new IllegalArgumentException("An expansion with the id " + expansion.getId() + " is already registered.");
         }
 
-        Plugin plugin = Optional.ofNullable(expansion.getPlugin()).orElse(this.plugin);
+        Plugin plugin = getPluginForExpansion(expansion);
         if (plugin == null) {
             throw new IllegalStateException("Could not resolve plugin for expansion " + expansion.getName() + ". " +
                     "Please set the plugin in the expansion or add a suitable plugin resolver.");
         }
 
-        activator.activateExpansion(expansion);
+        if (!activator.activateExpansion(expansion)) {
+            return;
+        }
 
         expansions.put(expansion.getId(), expansion);
-        expansionsForPlugin.computeIfAbsent(plugin, k -> new CopyOnWriteArrayList<>()).add(expansion);
+        expansionsForPlugin.computeIfAbsent(plugin.getName(), k -> new CopyOnWriteArrayList<>()).add(expansion);
     }
 
     @Override
@@ -46,6 +46,17 @@ public class DefaultExpansionRegistry implements ExpansionRegistry {
         Expansion expansion = expansions.remove(id);
         if (expansion != null) {
             activator.deactivateExpansion(expansion);
+
+            String pluginName = getPluginForExpansion(expansion).getName();
+
+            List<Expansion> expListForPlugin = expansionsForPlugin.get(pluginName);
+            if (expListForPlugin != null) {
+                expListForPlugin.remove(expansion);
+
+                if (expListForPlugin.isEmpty()) {
+                    expansionsForPlugin.remove(pluginName);
+                }
+            }
         }
 
         return expansion;
@@ -53,12 +64,14 @@ public class DefaultExpansionRegistry implements ExpansionRegistry {
 
     @Override
     public void unregisterExpansionsForPlugin(Plugin plugin) {
-        List<Expansion> linkedExpansions = expansionsForPlugin.get(plugin);
+        List<Expansion> linkedExpansions = expansionsForPlugin.get(plugin.getName());
         if (linkedExpansions == null) {
             return;
         }
 
-        new ArrayList<>(linkedExpansions).forEach(expansion -> unregisterExpansion(expansion.getId()));
+        linkedExpansions = new ArrayList<>(linkedExpansions);
+
+        linkedExpansions.forEach(expansion -> unregisterExpansion(expansion.getId()));
     }
 
     @Override
@@ -71,5 +84,9 @@ public class DefaultExpansionRegistry implements ExpansionRegistry {
         List<Expansion> list = new ArrayList<>(expansions.values());
 
         return Collections.unmodifiableList(list);
+    }
+
+    private Plugin getPluginForExpansion(Expansion expansion) {
+        return Optional.ofNullable(expansion.getPlugin()).orElse(this.plugin);
     }
 }
