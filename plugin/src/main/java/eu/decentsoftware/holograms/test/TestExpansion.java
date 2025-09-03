@@ -30,6 +30,11 @@ public class TestExpansion implements Expansion {
     }
 
     @Override
+    public boolean isEnabledByDefault() {
+        return false;
+    }
+
+    @Override
     public String getId() {
         return "test";
     }
