@@ -1,5 +1,7 @@
-package eu.decentsoftware.holograms.api.utils;
+package eu.decentsoftware.holograms.utils;
 
+import eu.decentsoftware.holograms.api.utils.Common;
+import eu.decentsoftware.holograms.api.utils.Log;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

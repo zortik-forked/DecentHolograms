@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.decentsoftware.holograms.api.utils.entity;
+package eu.decentsoftware.holograms.utils.entity;
 
 import com.cryptomorin.xseries.XEntityType;
+import eu.decentsoftware.holograms.api.utils.entity.DecentEntityType;
 import org.bukkit.entity.EntityType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

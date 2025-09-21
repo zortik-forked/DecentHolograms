@@ -7,15 +7,12 @@ subprojects {
     repositories {
         mavenCentral()
         maven { url = "https://repo.codemc.io/repository/nms/" }
+        maven { url = "https://repo.codemc.io/repository/maven-public/" }
     }
 
     dependencies {
         if (!project.path.endsWith(":shared")) {
             implementation project(":shared")
-        }
-
-        if (project.path.startsWith(":expansion")) {
-            compileOnly project(":plugin")
         }
     }
 
