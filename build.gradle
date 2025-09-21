@@ -13,6 +13,10 @@ subprojects {
         if (!project.path.endsWith(":shared")) {
             implementation project(":shared")
         }
+
+        if (project.path.startsWith(":expansion")) {
+            compileOnly project(":plugin")
+        }
     }
 
     java {
