@@ -2,6 +2,14 @@ package eu.decentsoftware.holograms.api;
 
 import eu.decentsoftware.holograms.api.animations.AnimationManager;
 import eu.decentsoftware.holograms.api.commands.CommandManager;
+import eu.decentsoftware.holograms.api.context.DefaultAppContextFactory;
+import eu.decentsoftware.holograms.api.expansion.*;
+import eu.decentsoftware.holograms.api.expansion.config.DefaultExpansionConfigSource;
+import eu.decentsoftware.holograms.api.expansion.config.ExpansionConfigSource;
+import eu.decentsoftware.holograms.api.expansion.context.DefaultExpansionContextFactory;
+import eu.decentsoftware.holograms.api.expansion.listener.ExpansionWatchingListener;
+import eu.decentsoftware.holograms.api.expansion.DefaultExpansionRegistry;
+import eu.decentsoftware.holograms.api.expansion.ExpansionRegistry;
 import eu.decentsoftware.holograms.api.features.FeatureManager;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import eu.decentsoftware.holograms.api.holograms.HologramManager;
@@ -20,6 +28,8 @@ import eu.decentsoftware.holograms.nms.NmsAdapterFactory;
 import eu.decentsoftware.holograms.nms.NmsPacketListenerService;
 import eu.decentsoftware.holograms.nms.api.DecentHologramsNmsException;
 import eu.decentsoftware.holograms.nms.api.NmsAdapter;
+import eu.decentsoftware.holograms.plugin.file.DefaultFileSystemService;
+import eu.decentsoftware.holograms.plugin.file.FileSystemService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bstats.bukkit.Metrics;
@@ -37,7 +47,7 @@ import java.util.logging.Logger;
  * and fields that are used to manage DecentHolograms. You can get the instance
  * of this class by using {@link DecentHologramsAPI#get()}.
  *
- * @author d0by
+ * @author d0by, ZorTik
  * @see DecentHologramsAPI
  */
 @Getter
@@ -51,6 +61,8 @@ public final class DecentHolograms {
     private FeatureManager featureManager;
     private AnimationManager animationManager;
     private Ticker ticker;
+    private FileSystemService fileSystemService;
+    private ExpansionManager expansionManager;
     private boolean updateAvailable;
 
     DecentHolograms(@NonNull JavaPlugin plugin) {
@@ -70,10 +82,18 @@ public final class DecentHolograms {
         this.animationManager = new AnimationManager(this);
         DecentHologramsNmsPacketListener nmsPacketListener = new DecentHologramsNmsPacketListener(hologramManager);
         this.nmsPacketListenerService = new NmsPacketListenerService(plugin, nmsAdapter, nmsPacketListener);
+        this.fileSystemService = new DefaultFileSystemService(plugin);
+
+        ExpansionRegistry expansionRegistry = buildExpansionRegistry();
+        this.expansionManager = new ExpansionManager(
+                expansionRegistry, new DefaultExpansionSourceRegistry(expansionRegistry), fileSystemService, plugin);
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerListener(this), this.plugin);
         pm.registerEvents(new WorldListener(hologramManager), this.plugin);
+        pm.registerEvents(new ExpansionWatchingListener(expansionManager.getRegistry()), this.plugin);
+
+        expansionManager.load();
 
         setupMetrics();
         checkForUpdates();
@@ -82,6 +102,8 @@ public final class DecentHolograms {
     }
 
     void disable() {
+        this.expansionManager.unload();
+
         this.nmsPacketListenerService.shutdown();
         this.featureManager.destroy();
         this.hologramManager.destroy();
@@ -104,11 +126,24 @@ public final class DecentHolograms {
         Settings.reload();
         Lang.reload();
 
+        this.expansionManager.unload();
         this.animationManager.reload();
         this.hologramManager.reload();
         this.featureManager.reload();
+        this.expansionManager.load();
 
         EventFactory.fireReloadEvent();
+    }
+
+    private ExpansionRegistry buildExpansionRegistry() {
+        ExpansionConfigSource configSource = new DefaultExpansionConfigSource(fileSystemService.getExpansionConfigsDirectory());
+        ExpansionActivator activator = new DefaultExpansionActivator(
+                new DefaultAppContextFactory(),
+                new DefaultExpansionContextFactory(commandManager, nmsPacketListenerService, configSource, getLogger()),
+                configSource,
+                getLogger());
+
+        return new DefaultExpansionRegistry(activator, plugin);
     }
 
     private void initializeNmsAdapter() {

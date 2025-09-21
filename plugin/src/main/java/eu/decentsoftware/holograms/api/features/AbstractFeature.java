@@ -3,7 +3,10 @@ package eu.decentsoftware.holograms.api.features;
 /**
  * This interface represents a feature. You can create your
  * own features doing anything you want.
+ *
+ * @deprecated Deprecated in favor of expansions system.
  */
+@Deprecated
 public abstract class AbstractFeature {
 
 	protected final String name;
@@ -49,6 +52,8 @@ public abstract class AbstractFeature {
 	 * Enable this feature.
 	 */
 	public abstract void enable();
+
+
 
 	/**
 	 * Disable this feature.

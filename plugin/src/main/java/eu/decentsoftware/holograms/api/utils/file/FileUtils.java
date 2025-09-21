@@ -64,4 +64,44 @@ public class FileUtils {
 		return null;
 	}
 
+    /**
+     * Ensures that the given file is a directory. If it does not exist, it attempts to create it.
+     *
+     * @param file the directory to ensure
+     */
+    public static void ensureFolder(@NonNull File file) {
+        if (!file.exists() && !file.mkdirs()) {
+            throw new RuntimeException("Could not create directory: " + file.getAbsolutePath());
+        }
+
+        if (!file.isDirectory()) {
+            throw new IllegalArgumentException("The provided file is not a directory: " + file.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Ensures that the given file exists. If it does not exist, it attempts to create it along with any necessary
+     * parent directories.
+     *
+     * @param file the file to ensure
+     */
+    public static void ensureFile(@NonNull File file) {
+        if (!file.exists()) {
+            try {
+                File parent = file.getParentFile();
+                if (parent != null) {
+                    ensureFolder(parent);
+                }
+                if (!file.createNewFile()) {
+                    throw new RuntimeException("Failed to create file.");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Could not create file: " + file.getAbsolutePath(), e);
+            }
+        }
+
+        if (!file.isFile()) {
+            throw new IllegalArgumentException("The provided path is not a file: " + file.getAbsolutePath());
+        }
+    }
 }
